@@ -87,6 +87,7 @@ def get_index_direction(hand_landmarks):
 
 def draw_dashboard(height, active_command):
     dashboard = np.zeros((height, 300, 3), dtype=np.uint8)
+    BlUE = (255, 0, 0)
     GREEN = (0, 255, 0)
     GRAY = (50, 50, 50)
     WHITE = (255, 255, 255)
@@ -102,7 +103,7 @@ def draw_dashboard(height, active_command):
     }
     
     for cmd, (x, y, w, h) in btns.items():
-        color = GREEN if cmd == active_command else GRAY
+        color = BlUE if cmd == active_command else GRAY
         thickness = -1 if cmd == active_command else 2
         cv2.rectangle(dashboard, (x, y), (x + w, y + h), color, thickness)
         
