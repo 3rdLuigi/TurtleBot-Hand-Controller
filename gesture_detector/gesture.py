@@ -37,7 +37,6 @@ def get_finger_state(hand_landmarks):
     state = {}
     wrist = hand_landmarks.landmark[0]
     
-    # 1. Check Index, Middle, Ring, Pinky
     for name, (tip_idx, pip_idx) in fingers.items():
         tip = hand_landmarks.landmark[tip_idx]
         pip = hand_landmarks.landmark[pip_idx]
@@ -45,35 +44,24 @@ def get_finger_state(hand_landmarks):
         dist_pip = math.hypot(pip.x - wrist.x, pip.y - wrist.y)
         state[name] = dist_tip > dist_pip
 
-    # 2. Check Thumb (Special Logic)
-    # Thumb is "Open" if the tip is far away from the Index Finger Knuckle (MCP)
     thumb_tip = hand_landmarks.landmark[4]
     index_mcp = hand_landmarks.landmark[5]
     thumb_dist = math.hypot(thumb_tip.x - index_mcp.x, thumb_tip.y - index_mcp.y)
     
-    # Threshold: 0.1 is a decent heuristic for normalized coordinates
     state["thumb"] = thumb_dist > 0.1
     
     return state
 
 def get_thumb_direction(hand_landmarks):
-    """
-    Determines if thumb is pointing Left or Right.
-    Compares Thumb Tip (4) vs Thumb IP Knuckle (3)
-    """
     tip = hand_landmarks.landmark[4]
     ip = hand_landmarks.landmark[3]
     
-    # Positive X is Right, Negative X is Left
     if tip.x < ip.x:
         return "ROTATE_LEFT"
     else:
         return "ROTATE_RIGHT"
 
 def get_index_direction(hand_landmarks):
-    """
-    Determines direction based on Index Finger vector.
-    """
     tip = hand_landmarks.landmark[8]
     mcp = hand_landmarks.landmark[5]
     
@@ -116,7 +104,6 @@ def draw_dashboard(height, active_command):
         
     return dashboard
 
-# --- MAIN LOOP ---
 try:
     while cap.isOpened():
         ret, frame = cap.read()
@@ -133,19 +120,14 @@ try:
             for hand_landmarks in results.multi_hand_landmarks:
                 mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
                 
-                # Check Finger States
                 fingers = get_finger_state(hand_landmarks)
                 
-                # Logic Gates
-                # 1. Translation Mode: Index OPEN, Thumb CLOSED
                 if fingers["index"] and not fingers["thumb"] and not fingers["middle"]:
                     current_command = get_index_direction(hand_landmarks)
                 
-                # 2. Rotation Mode: Thumb OPEN, Index CLOSED
                 elif fingers["thumb"] and not fingers["index"] and not fingers["middle"]:
                     current_command = get_thumb_direction(hand_landmarks)
                 
-                # 3. Stop Mode: Both Closed (Fist) or Both Open (Confused)
                 else:
                     current_command = "STOP"
 

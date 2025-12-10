@@ -4,14 +4,14 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <filesystem> // Requires C++17
+#include <filesystem> 
 
 class HandController : public rclcpp::Node
 {
 public:
   HandController() : Node("hand_controller")
   {
-    // 1. Declare the parameter "yaml_path" with a default value (empty)
+    // Declare the parameter "yaml_path" with a default value (empty)
     this->declare_parameter<std::string>("yaml_path", "");
 
     publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
@@ -28,7 +28,7 @@ private:
   {
     std::string command = "STOP";
     
-    // 2. Get the current value of the parameter
+    // Get the current value of the parameter
     std::string yaml_path;
     this->get_parameter("yaml_path", yaml_path);
 
@@ -44,7 +44,6 @@ private:
         command = config["command"].as<std::string>();
       }
     } catch (const YAML::BadFile& e) {
-       // File might be busy writing
     } catch (const std::exception& e) {
       RCLCPP_ERROR(this->get_logger(), "YAML Parse Error: %s", e.what());
     }
