@@ -2,3 +2,6 @@
 **/install/
 **/log/
 **/venv/
+data/*.yaml
+__pycache__/
+*.pyc
