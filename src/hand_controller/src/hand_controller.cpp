@@ -62,10 +62,10 @@ private:
     else if (command == "MOVE_BACKWARD") {
         msg.linear.x = -0.2; // Backing up is usually allowed even if front is blocked
     } 
-    else if (command == "ROTATE_LEFT" || command == "MOVE_LEFT") {
+    else if (command == "ROTATE_LEFT") {
         msg.angular.z = 0.5;
     } 
-    else if (command == "ROTATE_RIGHT" || command == "MOVE_RIGHT") {
+    else if (command == "ROTATE_RIGHT") {
         msg.angular.z = -0.5;
     } 
     else {
