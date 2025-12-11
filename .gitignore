@@ -1,7 +1,14 @@
-**/build/
-**/install/
-**/log/
-**/venv/
+# ROS 2 Build Artifacts
+build/
+install/
+log/
+
+# Python Virtual Environment
+venv/
+
+# Runtime Data (Ignore the files, keep the folder)
 data/*.yaml
+
+# Python Cache & Bytecode
 __pycache__/
 *.pyc
