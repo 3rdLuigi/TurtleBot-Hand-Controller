@@ -12,16 +12,24 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
+
+# hand_controller executable
 add_executable(hand_controller src/hand_controller.cpp)
-
 ament_target_dependencies(hand_controller rclcpp geometry_msgs)
-
 target_link_libraries(hand_controller yaml-cpp)
-
 install(TARGETS
   hand_controller
+  DESTINATION lib/${PROJECT_NAME}
+)
+# safety_checker executable
+add_executable(safety_checker src/safety_checker.cpp)
+ament_target_dependencies(safety_checker rclcpp sensor_msgs)
+target_link_libraries(safety_checker yaml-cpp)
+install(TARGETS
+  safety_checker
   DESTINATION lib/${PROJECT_NAME}
 )
 

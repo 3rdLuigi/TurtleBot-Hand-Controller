@@ -1,20 +1,30 @@
 import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
-def generate_launch_description():
-    # Run this from the root of your workspace
-    # Used an argument to pass the path, or default to a known relative location.
-    
+def generate_launch_description():   
+    base_path = os.getcwd() 
+    motion_file = os.path.join(base_path, 'data', 'motion.yaml')
+    safety_file = os.path.join(base_path, 'data', 'safety.yaml')
+
     return LaunchDescription([
+        # Node 1: The Safety Checker
+        Node(
+            package='hand_controller',
+            executable='safety_checker',
+            name='safety_checker',
+            output='screen',
+            parameters=[{'safety_yaml_path': safety_file}]
+        ),
+        # Node 2: The Hand Controller
         Node(
             package='hand_controller',
             executable='hand_controller',
             name='hand_controller',
             output='screen',
             parameters=[{
-                'yaml_path': os.path.join(os.getcwd(), 'data', 'motion.yaml')
+                'motion_yaml_path': motion_file,
+                'safety_yaml_path': safety_file
             }]
         )
     ])

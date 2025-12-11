@@ -4,64 +4,74 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <filesystem> 
 
 class HandController : public rclcpp::Node
 {
 public:
   HandController() : Node("hand_controller")
   {
-    // Declare the parameter "yaml_path" with a default value (empty)
-    this->declare_parameter<std::string>("yaml_path", "");
+    this->declare_parameter<std::string>("motion_yaml_path", "");
+    this->declare_parameter<std::string>("safety_yaml_path", "");
 
     publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
     
+    // Run at 10Hz (0.1s)
     timer_ = this->create_wall_timer(
       std::chrono::milliseconds(100),
       std::bind(&HandController::control_loop, this));
       
-    RCLCPP_INFO(this->get_logger(), "Hand Controller (C++) Started.");
+    RCLCPP_INFO(this->get_logger(), "Hand Controller Started. Waiting for commands...");
   }
 
 private:
   void control_loop()
   {
+    std::string motion_path, safety_path;
+    this->get_parameter("motion_yaml_path", motion_path);
+    this->get_parameter("safety_yaml_path", safety_path);
+
+    if (motion_path.empty() || safety_path.empty()) return;
+
     std::string command = "STOP";
-    
-    // Get the current value of the parameter
-    std::string yaml_path;
-    this->get_parameter("yaml_path", yaml_path);
+    std::string safety = "ALLOWED";
 
-    if (yaml_path.empty()) {
-        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000, 
-            "No YAML path provided! Use: ros2 run ... --ros-args -p yaml_path:=/path/to/file");
-        return;
-    }
-
+    // Read Motion Command
     try {
-      YAML::Node config = YAML::LoadFile(yaml_path);
-      if (config["command"]) {
-        command = config["command"].as<std::string>();
-      }
-    } catch (const YAML::BadFile& e) {
-    } catch (const std::exception& e) {
-      RCLCPP_ERROR(this->get_logger(), "YAML Parse Error: %s", e.what());
-    }
+      YAML::Node config = YAML::LoadFile(motion_path);
+      if (config["command"]) command = config["command"].as<std::string>();
+    } catch (...) {}
 
-    auto msg = geometry_msgs::msg::Twist();
+    // Read Safety Status
+    try {
+      YAML::Node safe_config = YAML::LoadFile(safety_path);
+      if (safe_config["status"]) safety = safe_config["status"].as<std::string>();
+    } catch (...) {}
 
     // Logic Engine
+    auto msg = geometry_msgs::msg::Twist();
+    
+    // Safety Override: If BLOCKED, you CANNOT go FORWARD.
     if (command == "MOVE_FORWARD") {
-      msg.linear.x = 0.2;
-    } else if (command == "MOVE_BACKWARD") {
-      msg.linear.x = -0.2;
-    } else if (command == "MOVE_LEFT" || command == "ROTATE_LEFT") {
-      msg.angular.z = 0.5;
-    } else if (command == "MOVE_RIGHT" || command == "ROTATE_RIGHT") {
-      msg.angular.z = -0.5;
-    } else {
-      msg.linear.x = 0.0;
-      msg.angular.z = 0.0;
+        if (safety == "BLOCKED") {
+            RCLCPP_WARN(this->get_logger(), "Obstacle Detected! Stopping Forward Motion.");
+            msg.linear.x = 0.0;
+        } else {
+            msg.linear.x = 0.2;
+        }
+    } 
+    else if (command == "MOVE_BACKWARD") {
+        msg.linear.x = -0.2; // Backing up is usually allowed even if front is blocked
+    } 
+    else if (command == "ROTATE_LEFT" || command == "MOVE_LEFT") {
+        msg.angular.z = 0.5;
+    } 
+    else if (command == "ROTATE_RIGHT" || command == "MOVE_RIGHT") {
+        msg.angular.z = -0.5;
+    } 
+    else {
+        // STOP
+        msg.linear.x = 0.0;
+        msg.angular.z = 0.0;
     }
 
     publisher_->publish(msg);
